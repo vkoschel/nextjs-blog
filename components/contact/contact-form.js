@@ -1,24 +1,82 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import classes from "./contact-form.module.css";
+import Notification from "../ui/notification";
+
+async function sendContactData(contactDetails) {
+  const response = await fetch("/api/contact", {
+    method: "POST",
+    body: JSON.stringify(contactDetails),
+    header: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "something went wrong");
+  }
+}
 
 function ContactForm() {
   const [enteredEmail, setEnteredEmail] = useState("");
   const [enteredName, setEnteredName] = useState("");
   const [enteredMessage, setEnteredMessage] = useState("");
-  function sendMessageHandler(event) {
+  const [requestStatus, setRequestStatus] = useState();
+
+  useEffect(() => {
+    if (requestStatus === "success" || requestStatus === "error") {
+      const timer = setTimeout(() => {
+        setRequestStatus(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [requestStatus]);
+
+  async function sendMessageHandler(event) {
     event.preventDefault();
 
-    fetch("/api/contact", {
-      method: "POST",
-      body: JSON.stringify({
+    setRequestStatus("pending");
+
+    try {
+      await sendContactData({
         email: enteredEmail,
         name: enteredName,
         message: enteredMessage,
-      }),
-      header: {
-        "Content-Type": "application/json",
-      },
-    });
+      });
+      setRequestStatus("success");
+      setEnteredMessage("");
+      setEnteredEmail("");
+      setEnteredName("");
+    } catch (error) {
+      setRequestStatus("error");
+    }
+  }
+
+  let notification;
+
+  if (requestStatus === "pending") {
+    notification = {
+      status: "pending",
+      title: "Sending...",
+      message: "Message is being sent",
+    };
+  }
+
+  if (requestStatus === "success") {
+    notification = {
+      status: "success",
+      title: "Yeah!",
+      message: "Thanks for your message.",
+    };
+  }
+
+  if (requestStatus === "error") {
+    notification = {
+      status: "error",
+      title: "Fail!",
+      message: "Message couldn't be sent.",
+    };
   }
 
   return (
@@ -61,6 +119,13 @@ function ContactForm() {
           <button>Send message</button>
         </div>
       </form>
+      {notification && (
+        <Notification
+          status={notification.status}
+          title={notification.title}
+          message={notification.message}
+        />
+      )}
     </section>
   );
 }
