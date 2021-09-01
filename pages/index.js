@@ -1,3 +1,5 @@
+import Head from "next/head";
+
 import { Fragment } from "react";
 
 import Hero from "../components/home-page/hero";
@@ -7,6 +9,10 @@ import { getFeaturedPosts } from "../lib/posts-util";
 function HomePage(props) {
   return (
     <Fragment>
+      <Head>
+        <title>Victão Blog</title>
+        <meta name="description" content="a blog constructed using next.js" />
+      </Head>
       <Hero />
       <FeaturedPosts posts={props.posts} />
     </Fragment>
